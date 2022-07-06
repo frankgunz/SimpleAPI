@@ -1,49 +1,43 @@
-trigger:
-  branches:
-    include:
-      - master
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
 
-jobs:
-- job: build_nxadapter_debug
-  displayName: build_nxadapter_debug
-  timeoutInMinutes: 120
-  pool:
-   vmImage: 'ubuntu-latest'
-  steps:
-  - script: docker build --build-arg BUILD_MODE=Debug --build-arg BUILD_SLN= -t ehubb-adapter:$(Build.BuildNumber) -f ci/Dockerfile.ehubb-adapter .
-    displayName: Build Adapter in docker image
-  - script: docker create ehubb-adapter:$(Build.BuildNumber) > ehubb-adapter.cid && cat ehubb-adapter.cid
-    displayName: Extract container ID
-  - script: rm -rf build-output && mkdir build-output
-    displayName: Create output directory to local disk
-  - script: docker cp $(cat nxadapter.cid):/source/output/. build-output
-    displayName: Copy build artifacts to output directory
-  - task: PublishBuildArtifacts@1
-    displayName: Upload artifacts
-    inputs:
-      pathtoPublish: build-output
-      Parallel: true
-      ParallelCount: 8
-      artifactName: '$(BUILT_1)'
+trigger: none
 
-- job: build_nxadapter_release
-  displayName: build_nxadapter_release
-  timeoutInMinutes: 120
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - script: docker build --build-arg BUILD_MODE=Release --build-arg BUILD_SLN= -t ehubb-adapter:$(Build.BuildNumber) -f ci/Dockerfile.ehubb-adapter .
-    displayName: Build Adapter in docker image
-  - script: docker create ehubb-adapter:$(Build.BuildNumber) > ehubb-adapter.cid && cat ehubb-adapter.cid
-    displayName: Extract container ID
-  - script: rm -rf build-output && mkdir build-output
-    displayName: Create output directory to local disk
-  - script: docker cp $(cat ehubb-adapter.cid):/source/output/. build-output
-    displayName: Copy build artifacts to output directory
-  - task: PublishBuildArtifacts@1
-    displayName: Upload artifacts
-    inputs:
-      pathtoPublish: build-output
-      Parallel: true
-      ParallelCount: 8
-      artifactName: '$(BUILT_2)'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: CI 
+  displayName: CI Stage
+  jobs:
+
+  - job: normal
+    displayName: Normal Job
+    steps:
+    - script: echo This is step ONE
+      displayName: 'Task 1'
+
+    - script: echo this is step TWO
+      displayName: 'Task 2'
+
+
+- stage: DeployToDEV
+  displayName: Deploy to Dev
+  jobs:
+  - deployment: deploymentJob
+    displayName: Deployment Job
+    environment:
+      name: windows
+      resourceType: VirtualMachine
+    strategy:
+      runOnce:
+         deploy:
+           steps:
+           - script: echo This is step ONE in Deploy
+             displayName: 'Deploy Task 1'
+             
+           - script: echo This is step Two in Deploy
+             displayName: 'Deploy Task 2'
